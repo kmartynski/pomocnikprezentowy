@@ -1,27 +1,35 @@
 import type { APIRoute } from 'astro'
-import OpenAI from 'openai'
+import { getSecret } from "astro:env/server";
+import { AzureOpenAI } from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.AZURE_OPENAI_API_KEY!,
-  baseURL: `${process.env.AZURE_OPENAI_ENDPOINT!}/openai/deployments/${process.env.AZURE_OPENAI_DEPLOYMENT_NAME!}`,
-  defaultQuery: { 'api-version': '2024-02-01' },
-  defaultHeaders: {
-    'api-key': process.env.AZURE_OPENAI_API_KEY!,
-  },
-})
+const apiKey = getSecret("AZURE_OPENAI_API_KEY");
+const endpoint = getSecret("AZURE_OPENAI_ENDPOINT");
+const deploymentName = getSecret("AZURE_OPENAI_DEPLOYMENT_NAME") as string;
 
 export const POST: APIRoute = async ({ request }) => {
+  const client = new AzureOpenAI({
+    apiKey,
+    endpoint,
+    apiVersion: "2024-12-01-preview",
+  });
+  console.log('🚀 API endpoint hit - generate-gift-ideas')
+  console.log('🔑 Environment variables check:')
+  console.log('- AZURE_OPENAI_API_KEY:', process.env.AZURE_OPENAI_API_KEY ? '✅ Set' : '❌ Missing')
+  console.log('- AZURE_OPENAI_ENDPOINT:', process.env.AZURE_OPENAI_ENDPOINT ? '✅ Set' : '❌ Missing')
+  console.log('- AZURE_OPENAI_DEPLOYMENT_NAME:', process.env.AZURE_OPENAI_DEPLOYMENT_NAME ? '✅ Set' : '❌ Missing')
+  
   try {
     const body = await request.json()
-    const { recipient, budget, finalOccasion, interests, recaptchaToken } = body
+    console.log('📝 Request body received:', { ...body, recaptchaToken: body.recaptchaToken ? '[HIDDEN]' : 'Missing' })
+    const { recipient, budget, finalOccasion, interests } = body
 
-    // Verify reCAPTCHA (simplified - you should verify with Google's API)
-    if (!recaptchaToken) {
-      return new Response(
-        JSON.stringify({ error: 'Brak weryfikacji reCAPTCHA' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
+    // Verify reCAPTCHA (simplified - you should verify with Google's API) - TEMPORARILY DISABLED
+    // if (!recaptchaToken) {
+    //   return new Response(
+    //     JSON.stringify({ error: 'Brak weryfikacji reCAPTCHA' }),
+    //     { status: 400, headers: { 'Content-Type': 'application/json' } }
+    //   )
+    // }
 
     // Validate required fields
     if (!recipient || !budget || !finalOccasion || !interests) {
@@ -53,24 +61,25 @@ Dla każdego pomysłu podaj:
 
 Odpowiedz w przyjaznym, pomocnym tonie po polsku.`
 
-    // Call Azure OpenAI
+    console.log('🤖 Calling Azure OpenAI with prompt length:', prompt.length)
+    
+    // Call Azure OpenAI - o1 model has different parameter requirements
     const response = await client.chat.completions.create({
-      model: process.env.AZURE_OPENAI_DEPLOYMENT_NAME!, // e.g., "gpt-4o"
+      model: deploymentName, // o1 model
       messages: [
         {
-          role: 'system',
-          content: 'Jesteś pomocnym asystentem specjalizującym się w doradztwie prezentowym. Odpowiadasz zawsze po polsku w przyjaznym tonie.'
-        },
-        {
-          role: 'user',
-          content: prompt
+          role: 'user',  // o1 models don't support system messages
+          content: `Jesteś pomocnym asystentem specjalizującym się w doradztwie prezentowym. Odpowiadasz zawsze po polsku w przyjaznym tonie.
+
+${prompt}`
         }
-      ],
-      max_tokens: 1000,
-      temperature: 0.7,
+      ]
+      // o1 models don't support max_completion_tokens or temperature
     })
 
     const giftIdeas = response.choices[0]?.message?.content || 'Nie udało się wygenerować pomysłów na prezenty.'
+    
+    console.log('✅ Azure OpenAI response received, length:', giftIdeas.length)
 
     return new Response(
       JSON.stringify({ giftIdeas }),

@@ -5,11 +5,11 @@ export const giftFormSchema = z.object({
   budget: z.number({
     required_error: "Budżet jest wymagany",
     invalid_type_error: "Budżet musi być liczbą",
-  }).min(1, "Budżet musi być większy niż 0"),
+  }).min(1, "Budżet jest wymagany i musi być większy niż 0"),
   occasion: z.string().min(1, "Wybierz okazję"),
   customOccasion: z.string().optional(),
   interests: z.string().min(1, "Podaj zainteresowania osoby obdarowywanej").max(500, "Maksymalnie 500 znaków"),
-  recaptchaToken: z.string().min(1, "Weryfikacja reCAPTCHA jest wymagana"),
+  recaptchaToken: z.string().optional(), // Temporarily disabled for development
 }).refine((data) => {
   // Jeśli wybrano "inne" jako okazję, custom occasion jest wymagana
   if (data.occasion === "inne" && (!data.customOccasion || data.customOccasion.trim() === "")) {
