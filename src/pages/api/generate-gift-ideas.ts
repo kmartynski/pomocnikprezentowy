@@ -39,27 +39,41 @@ export const POST: APIRoute = async ({ request }) => {
       )
     }
 
-    // Create prompt for Azure OpenAI
-    const prompt = `Jesteś doświadczonym konsultantem prezentowym. Pomóż znaleźć idealny prezent na podstawie następujących informacji:
+    // Create enhanced prompt for Azure OpenAI
+    const prompt = `Jesteś asystentem, który pomaga polskim klientom znaleźć najlepsze prezenty dla ich bliskich, w pełni dopasowane do podanych preferencji. Twoje zadanie to przygotowanie 3 szczegółowych propozycji prezentowych, bazując na danych w obiekcie data.
 
-**Odbiorca:** ${recipient}
-**Budżet:** ${budget} PLN
-**Okazja:** ${finalOccasion}
-**Zainteresowania:** ${interests}
+Twoje obowiązki:
+Każda propozycja musi nawiązywać do przynajmniej jednego zainteresowania osoby obdarowywanej – opisz to dokładnie i wyraźnie pokaż związek między zainteresowaniem a prezentem.
 
-Proszę zasugeruj 3-5 konkretnych pomysłów na prezenty, które:
-- Mieszczą się w podanym budżecie
-- Są odpowiednie dla tej okazji
-- Pasują do zainteresowań odbiorcy
-- Można je kupić w Polsce
+Weź pod uwagę budżet (${budget} PLN) na jedną osobę – żadna z propozycji (ani łączna wartość zestawu) nie może przekroczyć tej kwoty.
 
-Dla każdego pomysłu podaj:
-1. Nazwę prezentu
-2. Przybliżoną cenę
-3. Krótkie uzasadnienie wyboru
-4. Gdzie można to kupić (rodzaj sklepu)
+Zastosuj się do okazji (${finalOccasion}) – forma prezentu powinna pasować do okazji (np. inna dla urodzin, inna dla rocznicy).
 
-Odpowiedz w przyjaznym, pomocnym tonie po polsku.`
+Do każdej propozycji dodaj dokładnie jeden, konkretny link do produktu z Allegro.pl lub Empik.com (jeśli żaden nie pasuje – nie używaj propozycji).
+
+Każda propozycja może składać się z jednego prezentu lub zestawu kilku drobiazgów – dopasuj to do zainteresowań i budżetu.
+
+Jeśli brakuje danych (np. nie wiadomo, kto otrzymuje prezent albo nie ma podanych zainteresowań) – zadaj pytania uzupełniające.
+
+Pisz językiem ciepłym, informacyjnym i estetycznym, używaj emoji i pogrubień nagłówków.
+
+Format odpowiedzi:
+Dla każdego z 3 pomysłów zastosuj poniższy szablon:
+
+🎁 **[Nazwa prezentu]**
+**Dlaczego idealny:** Opisz, jak prezent odpowiada na zainteresowania danej osoby. Wyjaśnij związek pomiędzy pasją a produktem.
+
+**Link do produktu (Allegro lub Empik):** [wklej link]
+
+**Przybliżony koszt:** [kwota w PLN]
+
+Dane wejściowe:
+{
+  "person": "${recipient}",
+  "budget": ${budget},
+  "occasion": "${finalOccasion}",
+  "hobbys": "${interests}"
+}`
 
     console.log('🤖 Calling Azure OpenAI with prompt length:', prompt.length)
     
